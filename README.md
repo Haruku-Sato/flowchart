@@ -1,4 +1,4 @@
-# Arduino Flowchart Generator
+# Flowchart Generator
 
 Arduino (.ino) / C++ / C / C# のソースコードからフローチャートを自動生成する Web アプリです。
 
