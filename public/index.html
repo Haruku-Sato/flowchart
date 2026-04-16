@@ -1,0 +1,388 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Flowchart Generator</title>
+  <style>
+    *, *::before, *::after { box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+      background: #f5f7fa;
+      color: #333;
+      margin: 0;
+      padding: 24px;
+    }
+
+    h1 {
+      font-size: 1.5rem;
+      margin-bottom: 24px;
+      color: #1a1a2e;
+    }
+
+    /* ---- 入力パネル ---- */
+    #input-panel {
+      background: #fff;
+      border: 1px solid #e0e3ea;
+      border-radius: 12px;
+      overflow: hidden;
+    }
+
+    .input-tabs {
+      display: flex;
+      border-bottom: 1px solid #e0e3ea;
+    }
+
+    .input-tab {
+      flex: 1;
+      padding: 10px;
+      border: none;
+      background: #f8f9fb;
+      color: #888;
+      font-size: 0.88rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s;
+      border-radius: 0;
+    }
+
+    .input-tab:first-child { border-radius: 12px 0 0 0; }
+    .input-tab:last-child  { border-radius: 0 12px 0 0; }
+
+    .input-tab.active {
+      background: #fff;
+      color: #1a1a2e;
+      border-bottom: 2px solid #4a6cf7;
+      margin-bottom: -1px;
+    }
+
+    .tab-content { display: none; }
+    .tab-content.active { display: block; }
+
+    /* ---- ファイルタブ ---- */
+    #drop-zone {
+      padding: 48px 24px;
+      text-align: center;
+      cursor: pointer;
+      transition: background 0.2s;
+      user-select: none;
+    }
+
+    #drop-zone:hover,
+    #drop-zone.dragover { background: #f0f4ff; }
+
+    #drop-zone p {
+      margin: 0 0 8px;
+      font-size: 1rem;
+      color: #555;
+    }
+
+    #drop-zone small { color: #999; font-size: 0.85rem; }
+
+    #file-input { display: none; }
+
+    /* ---- コード入力タブ ---- */
+    #code-input {
+      display: block;
+      width: 100%;
+      min-height: 240px;
+      padding: 16px;
+      border: none;
+      border-bottom: 1px solid #e0e3ea;
+      font-family: 'SFMono-Regular', Consolas, monospace;
+      font-size: 0.85rem;
+      line-height: 1.6;
+      resize: vertical;
+      outline: none;
+      color: #1a1a2e;
+    }
+
+    #code-input::placeholder { color: #bbb; }
+
+    .code-footer {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      padding: 10px 16px;
+      flex-wrap: wrap;
+    }
+
+    .lang-row {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      flex: 1;
+      min-width: 0;
+    }
+
+    .lang-row label {
+      font-size: 0.82rem;
+      color: #888;
+      white-space: nowrap;
+    }
+
+    #lang-select {
+      padding: 4px 26px 4px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+      color: #555;
+      font-size: 0.82rem;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    #lang-detected {
+      font-size: 0.78rem;
+      color: #4a6cf7;
+      font-weight: 500;
+    }
+
+    #generate-btn {
+      padding: 7px 22px;
+      background: #4a6cf7;
+      color: #fff;
+      border: none;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+
+    #generate-btn:hover { background: #3655d8; }
+
+    /* ---- ステータス ---- */
+    #status {
+      margin-top: 14px;
+      font-size: 0.9rem;
+      color: #666;
+      min-height: 1.4em;
+    }
+
+    #status.error { color: #d32f2f; }
+
+    /* ---- 出力エリア ---- */
+    #output { margin-top: 24px; }
+
+    .toolbar {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 16px;
+      flex-wrap: wrap;
+    }
+
+    button {
+      padding: 8px 18px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 0.9rem;
+      font-weight: 500;
+      transition: background 0.15s;
+    }
+
+    #dl-svg    { background: #4a6cf7; color: #fff; }
+    #dl-svg:hover { background: #3655d8; }
+
+    #dl-png    { background: #2e7d32; color: #fff; }
+    #dl-png:hover { background: #1b5e20; }
+
+    #dl-drawio { background: #e65100; color: #fff; }
+    #dl-drawio:hover { background: #bf360c; }
+
+    .view-toggle {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      margin-bottom: 12px;
+      flex-wrap: wrap;
+    }
+
+    .view-btn {
+      padding: 5px 16px;
+      border: 1px solid #bbb;
+      border-radius: 20px;
+      background: #fff;
+      color: #555;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.15s, color 0.15s, border-color 0.15s;
+    }
+
+    .view-btn.active {
+      background: #1a1a2e;
+      color: #fff;
+      border-color: #1a1a2e;
+    }
+
+    #func-select {
+      padding: 5px 30px 5px 14px;
+      border: 1px solid #bbb;
+      border-radius: 20px;
+      background: #fff;
+      color: #555;
+      font-size: 0.85rem;
+      font-weight: 500;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23888'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 12px center;
+      transition: border-color 0.15s;
+      max-width: 220px;
+    }
+
+    #func-select:disabled { opacity: 0.35; cursor: default; }
+
+    #func-select.active {
+      border-color: #1a1a2e;
+      background-color: #f0f0f5;
+    }
+
+    .setting-sep {
+      width: 1px;
+      height: 18px;
+      background: #ddd;
+      margin: 0 4px;
+      flex-shrink: 0;
+    }
+
+    .setting-label {
+      font-size: 0.8rem;
+      color: #999;
+      white-space: nowrap;
+    }
+
+    #entry-label-select {
+      padding: 4px 26px 4px 10px;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      background: #fafafa;
+      color: #555;
+      font-size: 0.82rem;
+      cursor: pointer;
+      outline: none;
+      appearance: none;
+      -webkit-appearance: none;
+      background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E");
+      background-repeat: no-repeat;
+      background-position: right 8px center;
+    }
+
+    #mermaid-container {
+      background: #fff;
+      border: 1px solid #e0e3ea;
+      border-radius: 12px;
+      padding: 24px;
+      overflow-x: auto;
+    }
+
+    #mermaid-container svg {
+      display: block;
+      margin: 0 auto;
+      max-width: 100%;
+    }
+
+    details { margin-top: 16px; }
+
+    summary {
+      cursor: pointer;
+      font-size: 0.85rem;
+      color: #666;
+      user-select: none;
+    }
+
+    #mermaid-code {
+      margin-top: 8px;
+      background: #1e1e2e;
+      color: #cdd6f4;
+      padding: 16px;
+      border-radius: 8px;
+      font-size: 0.8rem;
+      overflow-x: auto;
+      white-space: pre;
+    }
+  </style>
+</head>
+<body>
+  <h1>Flowchart Generator</h1>
+
+  <div id="input-panel">
+    <div class="input-tabs">
+      <button class="input-tab active" data-tab="file">ファイル</button>
+      <button class="input-tab" data-tab="code">コード入力</button>
+    </div>
+
+    <!-- ファイルタブ -->
+    <div id="tab-file" class="tab-content active">
+      <div id="drop-zone">
+        <p>ここにファイルをドラッグ&ドロップ</p>
+        <p>または</p>
+        <button type="button" onclick="document.getElementById('file-input').click()">ファイルを選択</button>
+        <br><br>
+        <small>対応: .ino / .cpp / .c / .cs</small>
+        <input type="file" id="file-input" accept=".ino,.cpp,.c,.cs">
+      </div>
+    </div>
+
+    <!-- コード入力タブ -->
+    <div id="tab-code" class="tab-content">
+      <textarea id="code-input" placeholder="ここにコードを貼り付け...（言語は自動判定されます）"></textarea>
+      <div class="code-footer">
+        <div class="lang-row">
+          <label for="lang-select">言語</label>
+          <select id="lang-select">
+            <option value="auto">自動検出</option>
+            <option value="ino">Arduino (C++)</option>
+            <option value="cpp">C++</option>
+            <option value="c">C</option>
+            <option value="csharp">C#</option>
+          </select>
+          <span id="lang-detected"></span>
+        </div>
+        <button id="generate-btn">生成</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="status"></div>
+
+  <div id="output" style="display:none;">
+    <div class="toolbar">
+      <button id="dl-svg">SVG ダウンロード</button>
+      <button id="dl-png">PNG ダウンロード</button>
+      <button id="dl-drawio">draw.io (.drawio)</button>
+    </div>
+    <div class="view-toggle">
+      <button id="view-full" class="view-btn active">全体</button>
+      <select id="func-select" disabled>
+        <option value="">関数を選択...</option>
+      </select>
+      <div class="setting-sep"></div>
+      <span class="setting-label">エントリ</span>
+      <select id="entry-label-select">
+        <option value="name">関数名</option>
+        <option value="start">開始</option>
+      </select>
+    </div>
+    <div id="mermaid-container"></div>
+    <details>
+      <summary>生成された Mermaid コード</summary>
+      <pre id="mermaid-code"></pre>
+    </details>
+  </div>
+
+  <script type="module" src="/js/main.js"></script>
+</body>
+</html>

@@ -1,0 +1,19 @@
+{
+  "name": "arduino-flowchart",
+  "version": "1.0.0",
+  "description": "Arduino .ino ファイルからフローチャートを自動生成するWebアプリ",
+  "scripts": {
+    "setup": "node scripts/copy-wasm.js",
+    "start": "npx http-server ./public -p 3000 -c-1",
+    "dev": "node scripts/copy-wasm.js && npx http-server ./public -p 3000 -c-1"
+  },
+  "dependencies": {
+    "@mermaid-js/layout-elk": "^0.2.1",
+    "tree-sitter-cpp": "^0.22.3",
+    "tree-sitter-wasms": "^0.1.13",
+    "web-tree-sitter": "^0.22.6"
+  },
+  "devDependencies": {
+    "http-server": "^14.1.1"
+  }
+}
