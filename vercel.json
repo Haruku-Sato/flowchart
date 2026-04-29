@@ -1,0 +1,5 @@
+{
+  "buildCommand": "npm install && node scripts/copy-wasm.js",
+  "outputDirectory": "public",
+  "framework": null
+}
